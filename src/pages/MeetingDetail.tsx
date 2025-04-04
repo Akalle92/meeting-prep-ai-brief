@@ -1,12 +1,12 @@
-
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Calendar, Clock, Download, MapPin, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Header } from "@/components/Header";
 import { AttendeeProfile } from "@/components/AttendeeProfile";
 import { MeetingBrief } from "@/components/MeetingBrief";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import { PageLayout } from "@/components/PageLayout";
+import { CalendarIntegration } from "@/components/CalendarIntegration";
 
 // Mock data
 const MEETINGS = {
@@ -134,95 +134,91 @@ const MeetingDetail = () => {
   
   if (!meeting) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        <main className="flex-1 container py-8">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold">Meeting not found</h1>
-            <p className="mt-2 text-muted-foreground">
-              The meeting you're looking for doesn't exist or has been deleted.
-            </p>
-            <Button asChild className="mt-4">
-              <Link to="/">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Dashboard
-              </Link>
-            </Button>
-          </div>
-        </main>
-      </div>
-    );
-  }
-  
-  return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-      
-      <main className="flex-1 container py-6">
-        <div className="mb-6">
-          <Button asChild variant="ghost" size="sm">
+      <PageLayout title="Meeting not found">
+        <div className="text-center">
+          <p className="mt-2 text-muted-foreground">
+            The meeting you're looking for doesn't exist or has been deleted.
+          </p>
+          <Button asChild className="mt-4">
             <Link to="/">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Dashboard
             </Link>
           </Button>
         </div>
-        
-        <div className="mb-8">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">{meeting.title}</h1>
-              <div className="flex flex-wrap gap-2 mt-2">
+      </PageLayout>
+    );
+  }
+  
+  return (
+    <PageLayout>
+      <div className="mb-6">
+        <Button asChild variant="ghost" size="sm">
+          <Link to="/" className="group">
+            <ArrowLeft className="h-4 w-4 mr-2 transition-transform group-hover:-translate-x-1" />
+            Back to Dashboard
+          </Link>
+        </Button>
+      </div>
+      
+      <div className="mb-8 animate-fade-in">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">{meeting.title}</h1>
+            <div className="flex flex-wrap gap-2 mt-2">
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Calendar className="h-4 w-4 mr-1" />
+                {format(meeting.date, "EEEE, MMMM do, yyyy")}
+              </div>
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Clock className="h-4 w-4 mr-1" />
+                {format(meeting.date, "h:mm a")}
+              </div>
+              {meeting.location && (
                 <div className="flex items-center text-sm text-muted-foreground">
-                  <Calendar className="h-4 w-4 mr-1" />
-                  {format(meeting.date, "EEEE, MMMM do, yyyy")}
+                  <MapPin className="h-4 w-4 mr-1" />
+                  {meeting.location}
                 </div>
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <Clock className="h-4 w-4 mr-1" />
-                  {format(meeting.date, "h:mm a")}
-                </div>
-                {meeting.location && (
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <MapPin className="h-4 w-4 mr-1" />
-                    {meeting.location}
-                  </div>
-                )}
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <Users className="h-4 w-4 mr-1" />
-                  {meeting.attendees.length} attendees
-                </div>
+              )}
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Users className="h-4 w-4 mr-1" />
+                {meeting.attendees.length} attendees
               </div>
             </div>
-            
-            <Button>
+          </div>
+          
+          <div className="flex gap-3 w-full md:w-auto">
+            <CalendarIntegration className="flex-1 md:flex-none" />
+            <Button className="flex-1 md:flex-none">
               <Download className="h-4 w-4 mr-2" />
               Export Brief
             </Button>
           </div>
-          
-          {meeting.description && (
-            <p className="mt-4 text-muted-foreground">{meeting.description}</p>
-          )}
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <div className="md:col-span-2">
-            <MeetingBrief 
-              title={meeting.title}
-              summary={meeting.brief.summary}
-              recentEmails={meeting.brief.recentEmails}
-              actionItems={meeting.brief.actionItems}
-              talkingPoints={meeting.brief.talkingPoints}
-            />
-          </div>
-          
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-xl font-semibold mb-3">Attendees</h2>
-              <div className="space-y-4">
-                {meeting.attendees.map((attendee) => (
+        {meeting.description && (
+          <p className="mt-4 text-muted-foreground">{meeting.description}</p>
+        )}
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div className="md:col-span-2 animate-fade-in" style={{ animationDelay: "100ms" }}>
+          <MeetingBrief 
+            title={meeting.title}
+            summary={meeting.brief.summary}
+            recentEmails={meeting.brief.recentEmails}
+            actionItems={meeting.brief.actionItems}
+            talkingPoints={meeting.brief.talkingPoints}
+          />
+        </div>
+        
+        <div className="space-y-6 animate-fade-in" style={{ animationDelay: "200ms" }}>
+          <div>
+            <h2 className="text-xl font-semibold mb-3">Attendees</h2>
+            <div className="space-y-4">
+              {meeting.attendees.map((attendee, index) => (
+                <div key={attendee.id} className="animate-fade-in" style={{ animationDelay: `${300 + (index * 100)}ms` }}>
                   <AttendeeProfile
-                    key={attendee.id}
                     name={attendee.name}
                     email={attendee.email}
                     role={attendee.role}
@@ -231,13 +227,13 @@ const MeetingDetail = () => {
                     recentEmails={attendee.recentEmails}
                     linkedInUrl={attendee.linkedInUrl}
                   />
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </PageLayout>
   );
 };
 
