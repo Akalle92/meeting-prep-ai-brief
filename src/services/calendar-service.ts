@@ -35,6 +35,16 @@ export interface MeetingBrief {
   talkingPoints?: string[];
 }
 
+// Define the type for the user_calendar_connections table
+interface UserCalendarConnection {
+  id: string;
+  user_id: string;
+  provider: 'google' | 'outlook';
+  token: string;
+  refresh_token: string;
+  created_at: string;
+}
+
 // Calendar service
 export class CalendarService {
   private static instance: CalendarService;
@@ -55,14 +65,14 @@ export class CalendarService {
         return [];
       }
 
-      const { data: userProviders, error } = await supabase
+      const { data, error } = await supabase
         .from('user_calendar_connections')
         .select('provider')
         .eq('user_id', user.data.user.id);
       
       if (error) throw error;
       
-      return (userProviders?.map(up => up.provider as 'google' | 'outlook') || []);
+      return (data as UserCalendarConnection[] || []).map(connection => connection.provider);
     } catch (error) {
       console.error("Error fetching connected providers:", error);
       return [];
