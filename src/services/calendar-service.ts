@@ -1,11 +1,17 @@
-import { supabase } from "@/integrations/supabase/client";
 
-export const connectCalendar = async () => {
+import { supabase } from "@/integrations/supabase/client";
+import { Meeting, MeetingBrief, MeetingParticipant } from "@/types";
+
+export type { Meeting, MeetingBrief, MeetingParticipant };
+
+export const connectCalendar = async (provider: "google" | "outlook") => {
   try {
     const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
+      provider: provider === "outlook" ? "microsoft" : provider,
       options: {
-        scopes: ['https://www.googleapis.com/auth/calendar.readonly'],
+        scopes: provider === "google" 
+          ? ['https://www.googleapis.com/auth/calendar.readonly'] 
+          : ['calendars.read'],
         redirectTo: `${window.location.origin}/auth/callback`,
       },
     });
@@ -49,4 +55,28 @@ export const fetchMeetings = async () => {
     console.error("Error fetching meetings:", error.message);
     return { success: false, error: error.message };
   }
+};
+
+// Adding these placeholder functions for the interface to match
+export const getMeetingParticipants = async (meetingId: string, provider: string) => {
+  // Mock implementation until real backend is connected
+  return [
+    { id: '1', name: 'John Doe', email: 'john@example.com', role: 'organizer' },
+    { id: '2', name: 'Jane Smith', email: 'jane@example.com', role: 'attendee' },
+  ] as MeetingParticipant[];
+};
+
+export const generateBrief = async (meetingId: string, provider: string) => {
+  // Mock implementation until real backend is connected
+  return {
+    summary: 'This is a meeting summary that would be generated from the meeting context and related emails.',
+    recentEmails: [{
+      id: '1',
+      subject: 'Meeting Agenda',
+      date: new Date(),
+      excerpt: 'Here is the agenda for our upcoming meeting...'
+    }],
+    actionItems: ['Review project timeline', 'Prepare budget report', 'Schedule follow-up'],
+    talkingPoints: ['Project status update', 'Resource allocation', 'Next steps']
+  } as MeetingBrief;
 };

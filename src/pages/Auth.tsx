@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -21,7 +20,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/providers/AuthProvider";
 import { Separator } from "@/components/ui/separator";
 
-// Form validation schemas
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
@@ -46,15 +44,12 @@ export default function Auth() {
   const [showPassword, setShowPassword] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
   
-  // Get the return URL from location state or default to home page
   const from = (location.state as any)?.from?.pathname || "/";
   
-  // If user is already logged in, redirect to the return URL
   if (user && !isLoading) {
     return <Navigate to={from} replace />;
   }
   
-  // Login form
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -63,7 +58,6 @@ export default function Auth() {
     },
   });
   
-  // Signup form
   const signupForm = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
@@ -74,7 +68,6 @@ export default function Auth() {
     },
   });
   
-  // Handle login submission
   const onLoginSubmit = async (values: LoginFormValues) => {
     try {
       setAuthLoading(true);
@@ -86,7 +79,6 @@ export default function Auth() {
     }
   };
   
-  // Handle signup submission
   const onSignupSubmit = async (values: SignupFormValues) => {
     try {
       setAuthLoading(true);
@@ -98,16 +90,10 @@ export default function Auth() {
     }
   };
 
-  // Handle social provider signin
-  const handleProviderSignIn = async (provider: 'google' | 'microsoft' | 'apple') => {
-    try {
-      setAuthLoading(true);
-      await signInWithProvider(provider);
-    } catch (error) {
-      console.error(`${provider} sign in error:`, error);
-    } finally {
-      setAuthLoading(false);
-    }
+  const handleProviderSignIn = (provider: string) => {
+    localStorage.setItem('authRedirectPath', location.state?.from?.pathname || '/');
+    const supabaseProvider = provider === 'microsoft' ? 'azure' : provider;
+    signInWithProvider(supabaseProvider as any);
   };
   
   return (
@@ -122,7 +108,6 @@ export default function Auth() {
             <TabsTrigger value="signup">Sign Up</TabsTrigger>
           </TabsList>
           
-          {/* Login Tab */}
           <TabsContent value="login">
             <Card>
               <CardHeader>
@@ -290,7 +275,6 @@ export default function Auth() {
             </Card>
           </TabsContent>
           
-          {/* Sign Up Tab */}
           <TabsContent value="signup">
             <Card>
               <CardHeader>

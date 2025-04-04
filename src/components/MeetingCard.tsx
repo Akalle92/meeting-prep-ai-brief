@@ -11,7 +11,7 @@ import {
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow, format } from "date-fns";
-import { Meeting } from "@/services/calendar-service";
+import { Meeting } from "@/types";
 
 interface MeetingCardProps extends Meeting {
   briefAvailable?: boolean;
@@ -28,7 +28,7 @@ export function MeetingCard({
   briefAvailable = false
 }: MeetingCardProps) {
   return (
-    <Link to={`/meeting/${id}?provider=${provider}`}>
+    <Link to={`/meeting/${id}?provider=${provider || 'google'}`}>
       <Card className="h-full cursor-pointer transition-all hover:shadow-md">
         <CardHeader className="pb-2">
           <div className="flex justify-between items-start">
@@ -43,7 +43,7 @@ export function MeetingCard({
             {isUpcoming && (
               <Badge variant="secondary" className="ml-2 shrink-0">
                 <CalendarClock className="h-3 w-3 mr-1" />
-                {formatDistanceToNow(date, { addSuffix: true })}
+                {formatDistanceToNow(new Date(date), { addSuffix: true })}
               </Badge>
             )}
           </div>
@@ -52,7 +52,7 @@ export function MeetingCard({
           <div className="flex flex-col space-y-2 text-sm text-muted-foreground">
             <div className="flex items-center">
               <Clock className="h-4 w-4 mr-2" />
-              <span>{format(date, "EEEE, MMMM do · h:mm a")}</span>
+              <span>{format(new Date(date), "EEEE, MMMM do · h:mm a")}</span>
             </div>
             {location && (
               <div className="flex items-center">

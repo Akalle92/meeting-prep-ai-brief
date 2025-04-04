@@ -120,14 +120,10 @@ const MeetingDetail = () => {
   }
 
   const locationDisplay = meeting.location ? (
-    typeof meeting.location === 'string' ? (
-      <p className="flex items-center text-sm text-muted-foreground">
-        <MapPin className="mr-1 h-4 w-4" />
-        {meeting.location}
-      </p>
-    ) : (
-      meeting.location
-    )
+    <p className="flex items-center text-sm text-muted-foreground">
+      <MapPin className="mr-1 h-4 w-4" />
+      {meeting.location}
+    </p>
   ) : null;
 
   return (
