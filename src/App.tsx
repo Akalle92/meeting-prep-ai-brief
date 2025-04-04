@@ -8,13 +8,8 @@ import { useState, useEffect } from "react";
 import Index from "./pages/Index";
 import MeetingDetail from "./pages/MeetingDetail";
 import Settings from "./pages/Settings";
-import Auth from "./pages/Auth";
-import AuthCallback from "./pages/AuthCallback";
 import NotFound from "./pages/NotFound";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { CalendarProvider } from "@/providers/CalendarProvider";
-import { AuthProvider } from "@/providers/AuthProvider";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -58,38 +53,18 @@ const PageTransition = ({ children }: { children: React.ReactNode }) => {
 const App = () => (
   <ThemeProvider defaultTheme="system" storageKey="meetingprep-theme">
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <CalendarProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner position="top-right" expand closeButton />
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/auth/callback" element={<AuthCallback />} />
-                <Route 
-                  path="/meeting/:id" 
-                  element={
-                    <ProtectedRoute>
-                      <MeetingDetail />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/settings" 
-                  element={
-                    <ProtectedRoute>
-                      <Settings />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          </TooltipProvider>
-        </CalendarProvider>
-      </AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner position="top-right" expand closeButton />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/meeting/:id" element={<MeetingDetail />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
     </QueryClientProvider>
   </ThemeProvider>
 );

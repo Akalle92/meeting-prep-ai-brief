@@ -9,7 +9,6 @@ interface EmptyStateProps {
   icon?: ReactNode;
   actionLabel?: string;
   onAction?: () => void;
-  actionComponent?: ReactNode;
 }
 
 export function EmptyState({
@@ -18,7 +17,6 @@ export function EmptyState({
   icon = <CalendarPlus className="h-12 w-12 text-muted-foreground/50" />,
   actionLabel,
   onAction,
-  actionComponent,
 }: EmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center text-center p-8 my-8">
@@ -34,11 +32,6 @@ export function EmptyState({
           <Plus className="h-4 w-4 mr-2" />
           {actionLabel}
         </Button>
-      )}
-      {actionComponent && (
-        <div className="mt-6">
-          {actionComponent}
-        </div>
       )}
     </div>
   );

@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -18,30 +18,26 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
-import { useCalendarContext } from "@/providers/CalendarProvider";
 
 const Settings = () => {
   const { toast } = useToast();
-  const { connectedProviders, connectCalendar } = useCalendarContext();
-  const [connectedEmails, setConnectedEmails] = useState<{[key: string]: boolean}>({
+  const [connectedServices, setConnectedServices] = useState<{[key: string]: boolean}>({
+    googleCalendar: false,
+    outlookCalendar: false,
     gmail: false,
     outlookEmail: false
   });
   
-  const handleConnectCalendar = async (provider: 'google' | 'outlook') => {
-    await connectCalendar(provider);
-  };
-  
-  const handleConnectEmail = (service: string) => {
-    // In a real app, this would open OAuth flow for email
+  const handleConnectService = (service: string) => {
+    // In a real app, this would open OAuth flow
     toast({
-      title: "Connecting Email Service",
+      title: "Connecting Service",
       description: `This would start the OAuth flow for ${service} in a real app.`,
     });
     
     // Simulate successful connection
-    setConnectedEmails({
-      ...connectedEmails,
+    setConnectedServices({
+      ...connectedServices,
       [service]: true
     });
   };
@@ -88,14 +84,14 @@ const Settings = () => {
                   <ConnectServiceButton
                     serviceName="Google Calendar"
                     serviceIcon={<Calendar className="h-4 w-4 text-primary" />}
-                    isConnected={connectedProviders.includes('google')}
-                    onClick={() => handleConnectCalendar('google')}
+                    isConnected={connectedServices.googleCalendar}
+                    onClick={() => handleConnectService('googleCalendar')}
                   />
                   <ConnectServiceButton
                     serviceName="Outlook Calendar"
                     serviceIcon={<Calendar className="h-4 w-4 text-primary" />}
-                    isConnected={connectedProviders.includes('outlook')}
-                    onClick={() => handleConnectCalendar('outlook')}
+                    isConnected={connectedServices.outlookCalendar}
+                    onClick={() => handleConnectService('outlookCalendar')}
                   />
                 </CardContent>
               </Card>
@@ -111,14 +107,14 @@ const Settings = () => {
                   <ConnectServiceButton
                     serviceName="Gmail"
                     serviceIcon={<Mail className="h-4 w-4 text-primary" />}
-                    isConnected={connectedEmails.gmail}
-                    onClick={() => handleConnectEmail('gmail')}
+                    isConnected={connectedServices.gmail}
+                    onClick={() => handleConnectService('gmail')}
                   />
                   <ConnectServiceButton
                     serviceName="Outlook Email"
                     serviceIcon={<Mail className="h-4 w-4 text-primary" />}
-                    isConnected={connectedEmails.outlookEmail}
-                    onClick={() => handleConnectEmail('outlookEmail')}
+                    isConnected={connectedServices.outlookEmail}
+                    onClick={() => handleConnectService('outlookEmail')}
                   />
                 </CardContent>
               </Card>

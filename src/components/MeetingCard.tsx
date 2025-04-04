@@ -4,17 +4,19 @@ import {
   CalendarClock, 
   Clock, 
   MapPin, 
-  Users,
-  MailOpen,
-  Mail
+  Users
 } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow, format } from "date-fns";
-import { Meeting } from "@/types";
 
-interface MeetingCardProps extends Meeting {
-  briefAvailable?: boolean;
+interface MeetingCardProps {
+  id: string;
+  title: string;
+  date: Date;
+  location?: string;
+  attendeeCount: number;
+  isUpcoming: boolean;
 }
 
 export function MeetingCard({ 
@@ -23,27 +25,18 @@ export function MeetingCard({
   date, 
   location, 
   attendeeCount, 
-  isUpcoming,
-  provider,
-  briefAvailable = false
+  isUpcoming 
 }: MeetingCardProps) {
   return (
-    <Link to={`/meeting/${id}?provider=${provider || 'google'}`}>
+    <Link to={`/meeting/${id}`}>
       <Card className="h-full cursor-pointer transition-all hover:shadow-md">
         <CardHeader className="pb-2">
           <div className="flex justify-between items-start">
-            <div className="flex items-center">
-              <CardTitle className="line-clamp-2">{title}</CardTitle>
-              {provider && (
-                <Badge variant="outline" className="ml-2 text-xs">
-                  {provider === "google" ? "Google" : "Outlook"}
-                </Badge>
-              )}
-            </div>
+            <CardTitle className="line-clamp-2">{title}</CardTitle>
             {isUpcoming && (
               <Badge variant="secondary" className="ml-2 shrink-0">
                 <CalendarClock className="h-3 w-3 mr-1" />
-                {formatDistanceToNow(new Date(date), { addSuffix: true })}
+                {formatDistanceToNow(date, { addSuffix: true })}
               </Badge>
             )}
           </div>
@@ -52,7 +45,7 @@ export function MeetingCard({
           <div className="flex flex-col space-y-2 text-sm text-muted-foreground">
             <div className="flex items-center">
               <Clock className="h-4 w-4 mr-2" />
-              <span>{format(new Date(date), "EEEE, MMMM do · h:mm a")}</span>
+              <span>{format(date, "EEEE, MMMM do · h:mm a")}</span>
             </div>
             {location && (
               <div className="flex items-center">
@@ -67,21 +60,8 @@ export function MeetingCard({
           </div>
         </CardContent>
         <CardFooter>
-          <Badge variant={briefAvailable ? "default" : "outline"} 
-                 className={briefAvailable 
-                    ? "bg-primary/20 text-primary hover:bg-primary/30 flex items-center" 
-                    : "bg-primary/5 hover:bg-primary/10 flex items-center"}>
-            {briefAvailable ? (
-              <>
-                <MailOpen className="h-3.5 w-3.5 mr-1" />
-                Brief Available
-              </>
-            ) : (
-              <>
-                <Mail className="h-3.5 w-3.5 mr-1" />
-                Brief {isUpcoming ? "Pending" : "Available"}
-              </>
-            )}
+          <Badge variant="outline" className="bg-primary/5 hover:bg-primary/10">
+            Brief {isUpcoming ? "Pending" : "Available"}
           </Badge>
         </CardFooter>
       </Card>

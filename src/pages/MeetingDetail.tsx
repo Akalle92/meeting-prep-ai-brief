@@ -1,239 +1,236 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { PageLayout } from "@/components/PageLayout";
+import { useParams, Link } from "react-router-dom";
+import { ArrowLeft, Calendar, Clock, Download, MapPin, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, RefreshCw, UserRound, MapPin, Clock } from "lucide-react";
+import { AttendeeProfile } from "@/components/AttendeeProfile";
 import { MeetingBrief } from "@/components/MeetingBrief";
-import { useCalendarContext } from "@/providers/CalendarProvider";
-import { useToast } from "@/components/ui/use-toast";
 import { format } from "date-fns";
-import { LoadingState } from "@/components/LoadingState";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Meeting, MeetingBrief as MeetingBriefType, MeetingParticipant } from "@/types";
+import { PageLayout } from "@/components/PageLayout";
+import { CalendarIntegration } from "@/components/CalendarIntegration";
+
+// Mock data
+const MEETINGS = {
+  "1": {
+    id: "1",
+    title: "Weekly Team Sync",
+    date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+    location: "Conference Room A",
+    description: "Weekly sync to discuss project progress and roadblocks.",
+    attendees: [
+      {
+        id: "a1",
+        name: "Alex Johnson",
+        email: "alex@example.com",
+        role: "Product Manager",
+        company: "Acme Inc",
+        avatarUrl: "",
+        recentEmails: 5,
+        linkedInUrl: "https://linkedin.com/in/example",
+      },
+      {
+        id: "a2",
+        name: "Sam Williams",
+        email: "sam@example.com",
+        role: "Senior Developer",
+        company: "Acme Inc",
+        avatarUrl: "",
+        recentEmails: 3,
+      },
+      {
+        id: "a3",
+        name: "Taylor Chen",
+        email: "taylor@example.com",
+        role: "UI/UX Designer",
+        company: "Acme Inc",
+        avatarUrl: "",
+        recentEmails: 2,
+      },
+    ],
+    brief: {
+      summary: "This is the weekly team sync meeting to discuss project progress, roadblocks, and next steps. According to recent communications, the team is working on launching feature X, with some delays in the API integration. The deadline is approaching, and there are a few outstanding issues to address.",
+      recentEmails: [
+        {
+          id: "e1",
+          subject: "Re: Timeline for feature X",
+          date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+          excerpt: "I think we need to extend the timeline by one week due to the API integration issues we've been facing...",
+        },
+        {
+          id: "e2",
+          subject: "Updated wireframes for dashboard",
+          date: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
+          excerpt: "I've attached the updated wireframes for the dashboard. Please review and provide feedback...",
+        }
+      ],
+      actionItems: [
+        "Follow up on API integration issues with the backend team",
+        "Review updated wireframes and provide feedback",
+        "Update project timeline in project management tool"
+      ],
+      talkingPoints: [
+        "Progress on feature X development",
+        "API integration challenges",
+        "Timeline adjustment needs",
+        "Resource allocation for next sprint"
+      ]
+    }
+  },
+  "2": {
+    id: "2",
+    title: "Product Demo with Client",
+    date: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000),
+    location: "Zoom Call",
+    description: "Product demo with potential client ABC Corp.",
+    attendees: [
+      {
+        id: "a4",
+        name: "Jordan Smith",
+        email: "jordan@abccorp.com",
+        role: "CTO",
+        company: "ABC Corp",
+        avatarUrl: "",
+        recentEmails: 1,
+        linkedInUrl: "https://linkedin.com/in/example",
+      },
+      {
+        id: "a5",
+        name: "Morgan Lee",
+        email: "morgan@abccorp.com",
+        role: "Product Owner",
+        company: "ABC Corp",
+        avatarUrl: "",
+        recentEmails: 3,
+      }
+    ],
+    brief: {
+      summary: "This is a product demo meeting with ABC Corp, a potential client interested in our enterprise solution. Their team has expressed interest in our analytics features and API capabilities. They have concerns about security compliance and integration with their existing systems.",
+      recentEmails: [
+        {
+          id: "e3",
+          subject: "Questions before the demo",
+          date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+          excerpt: "We'd like to see specific examples of how your analytics dashboard would work with our data structure...",
+        }
+      ],
+      actionItems: [
+        "Prepare demo environment with ABC Corp example data",
+        "Review security compliance documentation",
+        "Prepare integration examples for their tech stack"
+      ],
+      talkingPoints: [
+        "Introduction to key analytics features",
+        "API documentation and capabilities",
+        "Security and compliance standards",
+        "Integration options with existing systems",
+        "Pricing and timeline for implementation"
+      ]
+    }
+  }
+};
 
 const MeetingDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const [searchParams] = useSearchParams();
-  const provider = searchParams.get("provider") as "google" | "outlook" || "google";
-  const navigate = useNavigate();
-  const { upcomingMeetings, generateBrief, getMeetingParticipants } = useCalendarContext();
-  const { toast } = useToast();
+  const meeting = MEETINGS[id as keyof typeof MEETINGS];
   
-  const [meeting, setMeeting] = useState<Meeting | null>(null);
-  const [brief, setBrief] = useState<MeetingBriefType | null>(null);
-  const [participants, setParticipants] = useState<MeetingParticipant[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isBriefLoading, setIsBriefLoading] = useState(false);
-  const [isParticipantsLoading, setIsParticipantsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!id) return;
-    
-    const meetingDetails = upcomingMeetings.find(m => m.id === id);
-    if (meetingDetails) {
-      setMeeting(meetingDetails);
-      setIsLoading(false);
-    } else {
-      setError("Meeting not found");
-      setIsLoading(false);
-    }
-  }, [id, upcomingMeetings]);
-
-  useEffect(() => {
-    if (meeting && id) {
-      setIsBriefLoading(true);
-      generateBrief(id, provider)
-        .then(data => {
-          setBrief(data);
-          setIsBriefLoading(false);
-        })
-        .catch(err => {
-          console.error("Error loading brief:", err);
-          setIsBriefLoading(false);
-        });
-      
-      setIsParticipantsLoading(true);
-      getMeetingParticipants(id, provider)
-        .then(data => {
-          setParticipants(data);
-          setIsParticipantsLoading(false);
-        })
-        .catch(err => {
-          console.error("Error loading participants:", err);
-          setIsParticipantsLoading(false);
-        });
-    }
-  }, [meeting, id, provider, generateBrief, getMeetingParticipants]);
-
-  const handleRefreshBrief = () => {
-    if (!id) return;
-    
-    setIsBriefLoading(true);
-    toast({
-      title: "Refreshing Brief",
-      description: "Generating an updated brief for this meeting...",
-    });
-    
-    generateBrief(id, provider)
-      .then(data => {
-        setBrief(data);
-        setIsBriefLoading(false);
-        toast({
-          title: "Brief Updated",
-          description: "Meeting brief has been refreshed with the latest information.",
-        });
-      })
-      .catch(err => {
-        console.error("Error refreshing brief:", err);
-        setIsBriefLoading(false);
-        toast({
-          title: "Error",
-          description: "Failed to refresh meeting brief. Please try again.",
-          variant: "destructive",
-        });
-      });
-  };
-
-  if (isLoading) {
+  if (!meeting) {
     return (
-      <PageLayout>
-        <LoadingState message="Loading meeting details..." />
-      </PageLayout>
-    );
-  }
-
-  if (error || !meeting) {
-    return (
-      <PageLayout>
-        <div className="flex flex-col items-center justify-center h-64">
-          <h2 className="text-xl font-medium mb-2">Meeting Not Found</h2>
-          <p className="text-muted-foreground mb-4">The meeting you're looking for doesn't exist or you don't have access to it.</p>
-          <Button onClick={() => navigate("/")}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Dashboard
+      <PageLayout title="Meeting not found">
+        <div className="text-center">
+          <p className="mt-2 text-muted-foreground">
+            The meeting you're looking for doesn't exist or has been deleted.
+          </p>
+          <Button asChild className="mt-4">
+            <Link to="/">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Dashboard
+            </Link>
           </Button>
         </div>
       </PageLayout>
     );
   }
-
-  const renderLocationDisplay = () => {
-    if (meeting.location) {
-      return (
-        <p className="flex items-center text-sm text-muted-foreground">
-          <MapPin className="mr-1 h-4 w-4" />
-          {meeting.location}
-        </p>
-      );
-    }
-    return null;
-  };
-
+  
   return (
-    <PageLayout 
-      title={meeting.title}
-      description={
-        <div className="flex flex-col gap-2 mt-2">
-          <div className="flex items-center gap-1 text-muted-foreground">
-            <Clock className="h-4 w-4 mr-1" />
-            {format(meeting.date, "EEEE, MMMM do, yyyy · h:mm a")}
-            {meeting.endDate && (
-              <> - {format(meeting.endDate, "h:mm a")}</>
-            )}
-          </div>
-          {renderLocationDisplay()}
-          <div className="flex items-center mt-1">
-            <Badge variant="outline" className="mr-2">
-              {provider === "google" ? "Google Calendar" : "Outlook Calendar"}
-            </Badge>
-            {meeting.isUpcoming ? (
-              <Badge variant="secondary">Upcoming</Badge>
-            ) : (
-              <Badge variant="outline">Past</Badge>
-            )}
-          </div>
-        </div>
-      }
-    >
+    <PageLayout>
       <div className="mb-6">
-        <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Dashboard
+        <Button asChild variant="ghost" size="sm">
+          <Link to="/" className="group">
+            <ArrowLeft className="h-4 w-4 mr-2 transition-transform group-hover:-translate-x-1" />
+            Back to Dashboard
+          </Link>
         </Button>
       </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1">
-          <div className="bg-card border rounded-lg shadow-sm">
-            <div className="p-4 border-b">
-              <h3 className="text-lg font-medium flex items-center">
-                <UserRound className="h-5 w-5 mr-2 text-primary" />
-                Participants
-                <Badge className="ml-2">{participants.length}</Badge>
-              </h3>
-            </div>
-            <div className="p-4">
-              {isParticipantsLoading ? (
-                <LoadingState message="Loading participants..." className="h-20" />
-              ) : participants.length === 0 ? (
-                <p className="text-muted-foreground text-center py-4">No participant data available</p>
-              ) : (
-                <div className="space-y-4">
-                  {participants.map((participant) => (
-                    <div key={participant.id} className="flex items-center space-x-3">
-                      <Avatar>
-                        <AvatarImage src={`https://api.dicebear.com/7.x/micah/svg?seed=${participant.email}`} />
-                        <AvatarFallback>
-                          {participant.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="font-medium">{participant.name || "Unknown"}</div>
-                        <div className="text-sm text-muted-foreground">{participant.email}</div>
-                      </div>
-                      {participant.role === "organizer" && (
-                        <Badge variant="outline" className="ml-auto">Organizer</Badge>
-                      )}
-                    </div>
-                  ))}
+      
+      <div className="mb-8 animate-fade-in">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">{meeting.title}</h1>
+            <div className="flex flex-wrap gap-2 mt-2">
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Calendar className="h-4 w-4 mr-1" />
+                {format(meeting.date, "EEEE, MMMM do, yyyy")}
+              </div>
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Clock className="h-4 w-4 mr-1" />
+                {format(meeting.date, "h:mm a")}
+              </div>
+              {meeting.location && (
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <MapPin className="h-4 w-4 mr-1" />
+                  {meeting.location}
                 </div>
               )}
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Users className="h-4 w-4 mr-1" />
+                {meeting.attendees.length} attendees
+              </div>
             </div>
-          </div>
-        </div>
-
-        <div className="lg:col-span-2">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">Meeting Brief</h2>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleRefreshBrief}
-              disabled={isBriefLoading}
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${isBriefLoading ? "animate-spin" : ""}`} />
-              Refresh Brief
-            </Button>
           </div>
           
-          {isBriefLoading ? (
-            <LoadingState message="Generating meeting brief..." />
-          ) : brief ? (
-            <MeetingBrief
-              title={meeting.title}
-              summary={brief.summary}
-              recentEmails={brief.recentEmails}
-              actionItems={brief.actionItems}
-              talkingPoints={brief.talkingPoints}
-            />
-          ) : (
-            <div className="border rounded-lg p-6 text-center">
-              <p className="text-muted-foreground mb-4">No meeting brief is available.</p>
-              <Button onClick={handleRefreshBrief}>Generate Brief</Button>
+          <div className="flex gap-3 w-full md:w-auto">
+            <CalendarIntegration className="flex-1 md:flex-none" />
+            <Button className="flex-1 md:flex-none">
+              <Download className="h-4 w-4 mr-2" />
+              Export Brief
+            </Button>
+          </div>
+        </div>
+        
+        {meeting.description && (
+          <p className="mt-4 text-muted-foreground">{meeting.description}</p>
+        )}
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div className="md:col-span-2 animate-fade-in" style={{ animationDelay: "100ms" }}>
+          <MeetingBrief 
+            title={meeting.title}
+            summary={meeting.brief.summary}
+            recentEmails={meeting.brief.recentEmails}
+            actionItems={meeting.brief.actionItems}
+            talkingPoints={meeting.brief.talkingPoints}
+          />
+        </div>
+        
+        <div className="space-y-6 animate-fade-in" style={{ animationDelay: "200ms" }}>
+          <div>
+            <h2 className="text-xl font-semibold mb-3">Attendees</h2>
+            <div className="space-y-4">
+              {meeting.attendees.map((attendee, index) => (
+                <div key={attendee.id} className="animate-fade-in" style={{ animationDelay: `${300 + (index * 100)}ms` }}>
+                  <AttendeeProfile
+                    name={attendee.name}
+                    email={attendee.email}
+                    role={attendee.role}
+                    company={attendee.company}
+                    avatarUrl={attendee.avatarUrl}
+                    recentEmails={attendee.recentEmails}
+                    linkedInUrl={attendee.linkedInUrl}
+                  />
+                </div>
+              ))}
             </div>
-          )}
+          </div>
         </div>
       </div>
     </PageLayout>
