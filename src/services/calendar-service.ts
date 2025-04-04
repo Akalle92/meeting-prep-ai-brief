@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -65,8 +66,10 @@ export class CalendarService {
         return [];
       }
 
+      // Fix for the Supabase query issue by using 'any' type for now
+      // This works around TypeScript's database schema validation
       const { data, error } = await supabase
-        .from('user_calendar_connections')
+        .from('user_calendar_connections' as any)
         .select('provider')
         .eq('user_id', user.data.user.id);
       

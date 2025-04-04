@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { PageLayout } from "@/components/PageLayout";
@@ -119,6 +120,14 @@ const MeetingDetail = () => {
     );
   }
 
+  // Fix for the Type Element issue - Line 125 area
+  const locationDisplay = meeting.location ? (
+    <div className="flex items-center text-muted-foreground">
+      <MapPin className="h-4 w-4 mr-1" />
+      {meeting.location}
+    </div>
+  ) : null;
+
   return (
     <PageLayout 
       title={meeting.title}
@@ -131,12 +140,7 @@ const MeetingDetail = () => {
               <> - {format(meeting.endDate, "h:mm a")}</>
             )}
           </div>
-          {meeting.location && (
-            <div className="flex items-center text-muted-foreground">
-              <MapPin className="h-4 w-4 mr-1" />
-              {meeting.location}
-            </div>
-          )}
+          {locationDisplay}
           <div className="flex items-center mt-1">
             <Badge variant="outline" className="mr-2">
               {provider === "google" ? "Google Calendar" : "Outlook Calendar"}
