@@ -7,7 +7,7 @@ export interface Meeting {
   location?: string;
   attendeeCount: number;
   isUpcoming: boolean;
-  provider?: "google" | "outlook";
+  provider?: "google" | "outlook" | "microsoft";
   description?: string;
 }
 

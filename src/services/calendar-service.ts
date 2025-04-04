@@ -10,8 +10,8 @@ export const connectCalendar = async (provider: "google" | "outlook") => {
       provider: provider === "outlook" ? "microsoft" : provider,
       options: {
         scopes: provider === "google" 
-          ? ['https://www.googleapis.com/auth/calendar.readonly'] 
-          : ['calendars.read'],
+          ? 'https://www.googleapis.com/auth/calendar.readonly' 
+          : 'calendars.read',
         redirectTo: `${window.location.origin}/auth/callback`,
       },
     });

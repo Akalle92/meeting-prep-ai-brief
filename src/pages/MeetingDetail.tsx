@@ -10,7 +10,7 @@ import { format } from "date-fns";
 import { LoadingState } from "@/components/LoadingState";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Meeting, MeetingBrief as MeetingBriefType, MeetingParticipant } from "@/services/calendar-service";
+import { Meeting, MeetingBrief as MeetingBriefType, MeetingParticipant } from "@/types";
 
 const MeetingDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -119,12 +119,17 @@ const MeetingDetail = () => {
     );
   }
 
-  const locationDisplay = meeting.location ? (
-    <p className="flex items-center text-sm text-muted-foreground">
-      <MapPin className="mr-1 h-4 w-4" />
-      {meeting.location}
-    </p>
-  ) : null;
+  const renderLocationDisplay = () => {
+    if (meeting.location) {
+      return (
+        <p className="flex items-center text-sm text-muted-foreground">
+          <MapPin className="mr-1 h-4 w-4" />
+          {meeting.location}
+        </p>
+      );
+    }
+    return null;
+  };
 
   return (
     <PageLayout 
@@ -138,7 +143,7 @@ const MeetingDetail = () => {
               <> - {format(meeting.endDate, "h:mm a")}</>
             )}
           </div>
-          {locationDisplay}
+          {renderLocationDisplay()}
           <div className="flex items-center mt-1">
             <Badge variant="outline" className="mr-2">
               {provider === "google" ? "Google Calendar" : "Outlook Calendar"}

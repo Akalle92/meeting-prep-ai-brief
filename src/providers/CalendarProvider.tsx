@@ -55,7 +55,8 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     try {
       const response = await fetchMeetings();
       if (response.success && response.data) {
-        setMeetings(response.data as Meeting[]);
+        // Use type assertion to convert the response data to Meeting[]
+        setMeetings(response.data as unknown as Meeting[]);
       } else {
         setError(response.error || "Unknown error fetching meetings");
       }
