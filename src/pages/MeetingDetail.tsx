@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { PageLayout } from "@/components/PageLayout";
@@ -120,12 +119,15 @@ const MeetingDetail = () => {
     );
   }
 
-  // Fix for the Type Element issue - Line 125 area
   const locationDisplay = meeting.location ? (
-    <div className="flex items-center text-muted-foreground">
-      <MapPin className="h-4 w-4 mr-1" />
-      {meeting.location}
-    </div>
+    typeof meeting.location === 'string' ? (
+      <p className="flex items-center text-sm text-muted-foreground">
+        <MapPin className="mr-1 h-4 w-4" />
+        {meeting.location}
+      </p>
+    ) : (
+      meeting.location
+    )
   ) : null;
 
   return (

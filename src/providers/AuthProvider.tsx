@@ -1,6 +1,6 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { Session, User } from "@supabase/supabase-js";
+import { Session, User, Provider } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -10,6 +10,7 @@ interface AuthContextType {
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, username?: string) => Promise<void>;
+  signInWithProvider: (provider: Provider) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -95,6 +96,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const signInWithProvider = async (provider: Provider) => {
+    try {
+      setIsLoading(true);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: window.location.origin + '/auth/callback',
+        },
+      });
+
+      if (error) throw error;
+      
+      // No toast here as we're redirecting to the provider's page
+    } catch (error: any) {
+      toast({
+        title: `Error signing in with ${provider}`,
+        description: error.message,
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      throw error;
+    }
+  };
+
   const signOut = async () => {
     try {
       setIsLoading(true);
@@ -124,6 +149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         signIn,
         signUp,
+        signInWithProvider,
         signOut,
       }}
     >

@@ -1,135 +1,107 @@
-
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { useCalendar, Meeting, MeetingBrief, MeetingParticipant } from "@/services/calendar-service";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+  useCallback,
+} from "react";
+import { Meeting } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { LoadingState } from "@/components/LoadingState";
-import { supabase } from "@/integrations/supabase/client";
-import { User } from "@supabase/supabase-js";
-
-type CalendarProvider = 'google' | 'outlook';
+import {
+  getMeetings as getMeetingsService,
+  connectCalendar as connectCalendarService,
+} from "@/services/calendar-service";
+import { useAuth } from "./AuthProvider";
 
 interface CalendarContextType {
+  meetings: Meeting[];
+  fetchMeetings: () => Promise<void>;
+  connectCalendar: () => Promise<void>;
+  isCalendarConnected: boolean;
   isLoading: boolean;
-  error: Error | null;
-  connectedProviders: CalendarProvider[];
-  upcomingMeetings: Meeting[];
-  refreshMeetings: () => void;
-  generateBrief: (meetingId: string, provider: CalendarProvider) => Promise<MeetingBrief>;
-  getMeetingParticipants: (meetingId: string, provider: CalendarProvider) => Promise<MeetingParticipant[]>;
-  connectCalendar: (provider: CalendarProvider) => Promise<void>;
 }
 
-const CalendarContext = createContext<CalendarContextType | undefined>(undefined);
+const CalendarContext = createContext<CalendarContextType | undefined>(
+  undefined
+);
 
 export function CalendarProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const calendar = useCalendar();
-  const queryClient = useQueryClient();
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [isCalendarConnected, setCalendarConnected] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
-  // Check for authenticated user
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user ?? null);
-        
-        // Refresh connected providers when auth state changes
-        if (session?.user) {
-          queryClient.invalidateQueries({ queryKey: ['connectedProviders'] });
-        }
-      }
-    );
+  const fetchMeetings = useCallback(async () => {
+    if (!user) {
+      console.warn("User not logged in, cannot fetch meetings.");
+      return;
+    }
 
-    // Get current session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [queryClient]);
-
-  // Query for connected providers
-  const {
-    data: connectedProviders = [],
-    isLoading: isLoadingProviders,
-    error: providersError,
-  } = useQuery({
-    queryKey: ['connectedProviders'],
-    queryFn: () => calendar.getConnectedProviders(),
-    enabled: !!user, // Only run if user is authenticated
-  });
-
-  // Query for upcoming meetings
-  const {
-    data: upcomingMeetings = [],
-    isLoading: isLoadingMeetings,
-    error: meetingsError,
-    refetch: refreshMeetings,
-  } = useQuery({
-    queryKey: ['upcomingMeetings'],
-    queryFn: () => calendar.fetchUpcomingMeetings(),
-    enabled: !!user && connectedProviders.length > 0, // Only run if user is authenticated and has connected providers
-  });
-
-  // Connect a calendar provider
-  const connectCalendar = async (provider: CalendarProvider) => {
+    setIsLoading(true);
     try {
-      const success = await calendar.authenticateProvider(provider);
-      if (success) {
-        // We'll rely on the OAuth redirect to update the state
-        toast({
-          title: "Calendar Connection Initiated",
-          description: `Follow the instructions in the popup to connect your ${provider === 'google' ? 'Google' : 'Microsoft'} calendar.`,
-        });
-      }
+      const fetchedMeetings = await getMeetingsService();
+      setMeetings(fetchedMeetings);
     } catch (error) {
+      console.error("Failed to fetch meetings:", error);
       toast({
-        title: "Connection Failed",
-        description: `Failed to connect ${provider} calendar. Please try again.`,
+        title: "Failed to Fetch Meetings",
+        description: "There was an error fetching your meetings.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast, user]);
+
+  const connectCalendar = async () => {
+    setIsLoading(true);
+    try {
+      const connectResult = await connectCalendarService();
+      if (connectResult !== undefined && connectResult !== null) {
+        toast({
+          title: "Calendar Connected",
+          description: "Your calendar has been successfully connected.",
+        });
+        setCalendarConnected(true);
+        fetchMeetings();
+      }
+    } catch (error) {
+      console.error("Failed to connect calendar:", error);
+      toast({
+        title: "Failed to Connect Calendar",
+        description: "There was an error connecting your calendar.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Generate a meeting brief
-  const generateBrief = async (meetingId: string, provider: CalendarProvider) => {
-    return calendar.generateMeetingBrief(meetingId, provider);
-  };
+  useEffect(() => {
+    if (user) {
+      fetchMeetings();
+    }
+  }, [user, fetchMeetings]);
 
-  // Get meeting participants
-  const getMeetingParticipants = async (meetingId: string, provider: CalendarProvider) => {
-    return calendar.getMeetingParticipants(meetingId, provider);
+  const value: CalendarContextType = {
+    meetings,
+    fetchMeetings,
+    connectCalendar,
+    isCalendarConnected,
+    isLoading,
   };
-
-  // Determine overall loading state and error
-  const isLoading = isLoadingProviders || isLoadingMeetings;
-  const error = providersError || meetingsError || null;
 
   return (
-    <CalendarContext.Provider
-      value={{
-        isLoading,
-        error: error as Error | null,
-        connectedProviders,
-        upcomingMeetings,
-        refreshMeetings,
-        generateBrief,
-        getMeetingParticipants,
-        connectCalendar,
-      }}
-    >
-      {children}
-    </CalendarContext.Provider>
+    <CalendarContext.Provider value={value}>{children}</CalendarContext.Provider>
   );
 }
 
-export function useCalendarContext() {
+export function useCalendar() {
   const context = useContext(CalendarContext);
-  if (context === undefined) {
-    throw new Error("useCalendarContext must be used within a CalendarProvider");
+  if (!context) {
+    throw new Error("useCalendar must be used within a CalendarProvider");
   }
   return context;
 }
