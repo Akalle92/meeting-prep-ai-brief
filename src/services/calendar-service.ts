@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -51,10 +50,15 @@ export class CalendarService {
   // Get user's connected calendar providers
   public async getConnectedProviders(): Promise<('google' | 'outlook')[]> {
     try {
+      const user = await supabase.auth.getUser();
+      if (!user.data.user) {
+        return [];
+      }
+
       const { data: userProviders, error } = await supabase
         .from('user_calendar_connections')
         .select('provider')
-        .eq('user_id', supabase.auth.getUser().then(res => res.data.user?.id));
+        .eq('user_id', user.data.user.id);
       
       if (error) throw error;
       

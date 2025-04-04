@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { PageLayout } from "@/components/PageLayout";
@@ -29,7 +28,6 @@ const MeetingDetail = () => {
   const [isParticipantsLoading, setIsParticipantsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load meeting details
   useEffect(() => {
     if (!id) return;
     
@@ -43,10 +41,8 @@ const MeetingDetail = () => {
     }
   }, [id, upcomingMeetings]);
 
-  // Load meeting brief and participants when meeting is found
   useEffect(() => {
     if (meeting && id) {
-      // Load brief
       setIsBriefLoading(true);
       generateBrief(id, provider)
         .then(data => {
@@ -58,7 +54,6 @@ const MeetingDetail = () => {
           setIsBriefLoading(false);
         });
       
-      // Load participants
       setIsParticipantsLoading(true);
       getMeetingParticipants(id, provider)
         .then(data => {
@@ -163,7 +158,6 @@ const MeetingDetail = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Participants Section */}
         <div className="lg:col-span-1">
           <div className="bg-card border rounded-lg shadow-sm">
             <div className="p-4 border-b">
@@ -203,7 +197,6 @@ const MeetingDetail = () => {
           </div>
         </div>
 
-        {/* Brief Section */}
         <div className="lg:col-span-2">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">Meeting Brief</h2>
