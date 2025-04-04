@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { MeetingCard } from "@/components/MeetingCard";
 import { EmptyState } from "@/components/EmptyState";
@@ -8,73 +8,42 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar, CalendarCheck, CalendarPlus, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-
-// Mock data for example
-const MOCK_MEETINGS = [
-  {
-    id: "1",
-    title: "Weekly Team Sync",
-    date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days in future
-    location: "Conference Room A",
-    attendeeCount: 5,
-    isUpcoming: true,
-  },
-  {
-    id: "2",
-    title: "Product Demo with Client",
-    date: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000), // 4 days in future
-    location: "Zoom Call",
-    attendeeCount: 3,
-    isUpcoming: true,
-  },
-  {
-    id: "3",
-    title: "Quarterly Planning",
-    date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days in future
-    location: "Main Boardroom",
-    attendeeCount: 8,
-    isUpcoming: true,
-  },
-  {
-    id: "4",
-    title: "Interview: Senior Developer",
-    date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days in past
-    location: "HR Office",
-    attendeeCount: 2,
-    isUpcoming: false,
-  },
-  {
-    id: "5",
-    title: "Marketing Strategy Review",
-    date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days in past
-    location: "Conference Room B",
-    attendeeCount: 4,
-    isUpcoming: false,
-  },
-];
+import { CalendarCard } from "@/components/CalendarIntegration";
+import { useCalendarContext } from "@/providers/CalendarProvider";
+import { LoadingState } from "@/components/LoadingState";
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
-  
-  // Simulate no connected services when app is first launched
-  const [hasConnectedServices, setHasConnectedServices] = useState(false);
+  const { 
+    upcomingMeetings, 
+    isLoading, 
+    error, 
+    refreshMeetings, 
+    connectedProviders
+  } = useCalendarContext();
   
   // Filter meetings based on search query
-  const filteredMeetings = MOCK_MEETINGS.filter(meeting => 
+  const filteredMeetings = upcomingMeetings.filter(meeting => 
     meeting.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
-  const upcomingMeetings = filteredMeetings.filter(m => m.isUpcoming);
-  const pastMeetings = filteredMeetings.filter(m => !m.isUpcoming);
+  const upcomingMeetingsList = filteredMeetings.filter(m => m.isUpcoming);
+  const pastMeetingsList = filteredMeetings.filter(m => !m.isUpcoming);
   
-  const handleConnectCalendar = () => {
-    // Simulate connecting a calendar service
+  // Refresh meetings data when the component mounts
+  useEffect(() => {
+    if (connectedProviders.length > 0) {
+      refreshMeetings();
+    }
+  }, [connectedProviders, refreshMeetings]);
+
+  const handleRefresh = () => {
+    refreshMeetings();
     toast({
-      title: "Service Connection",
-      description: "This would connect to a calendar service in a real app.",
+      title: "Refreshing Meetings",
+      description: "Fetching the latest meetings from your calendars.",
     });
-    setHasConnectedServices(true);
   };
 
   return (
@@ -101,48 +70,54 @@ const Index = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button>
+            <Button onClick={handleRefresh} disabled={isLoading || connectedProviders.length === 0}>
               <CalendarPlus className="h-4 w-4 mr-2" />
               <span>Refresh</span>
             </Button>
           </div>
         </div>
 
-        {!hasConnectedServices ? (
+        {connectedProviders.length === 0 ? (
           <EmptyState
             title="Connect your calendar to get started"
             description="MeetingPrep AI needs access to your calendar to provide meeting insights and briefings."
             icon={<Calendar className="h-12 w-12 text-primary/50" />}
-            actionLabel="Connect Calendar"
-            onAction={handleConnectCalendar}
+            actionComponent={<CalendarCard />}
+          />
+        ) : isLoading ? (
+          <LoadingState message="Loading your meetings..." />
+        ) : error ? (
+          <EmptyState
+            title="Error loading meetings"
+            description="There was a problem loading your meetings. Please try again."
+            icon={<Calendar className="h-12 w-12 text-destructive/50" />}
+            actionLabel="Try Again"
+            onAction={handleRefresh}
           />
         ) : (
           <Tabs defaultValue="upcoming" className="w-full">
             <TabsList className="mb-6">
               <TabsTrigger value="upcoming" className="flex items-center">
                 <Calendar className="h-4 w-4 mr-2" />
-                Upcoming ({upcomingMeetings.length})
+                Upcoming ({upcomingMeetingsList.length})
               </TabsTrigger>
               <TabsTrigger value="past" className="flex items-center">
                 <CalendarCheck className="h-4 w-4 mr-2" />
-                Past Meetings ({pastMeetings.length})
+                Past Meetings ({pastMeetingsList.length})
               </TabsTrigger>
             </TabsList>
             
             <TabsContent value="upcoming" className="mt-0">
-              {upcomingMeetings.length === 0 ? (
+              {upcomingMeetingsList.length === 0 ? (
                 <EmptyState
                   title="No upcoming meetings"
                   description="You don't have any upcoming meetings. When you do, they'll appear here."
                   actionLabel="Refresh Calendar"
-                  onAction={() => toast({
-                    title: "Refreshing",
-                    description: "Checking for new calendar events..."
-                  })}
+                  onAction={handleRefresh}
                 />
               ) : (
-                <div className="meeting-grid">
-                  {upcomingMeetings.map((meeting) => (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {upcomingMeetingsList.map((meeting) => (
                     <MeetingCard key={meeting.id} {...meeting} />
                   ))}
                 </div>
@@ -150,14 +125,14 @@ const Index = () => {
             </TabsContent>
             
             <TabsContent value="past" className="mt-0">
-              {pastMeetings.length === 0 ? (
+              {pastMeetingsList.length === 0 ? (
                 <EmptyState
                   title="No past meetings"
                   description="Your past meetings will appear here."
                 />
               ) : (
-                <div className="meeting-grid">
-                  {pastMeetings.map((meeting) => (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {pastMeetingsList.map((meeting) => (
                     <MeetingCard key={meeting.id} {...meeting} />
                   ))}
                 </div>

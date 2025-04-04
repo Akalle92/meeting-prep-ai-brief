@@ -1,9 +1,10 @@
 
 import { Button } from "@/components/ui/button";
-import { Calendar, CalendarCheck, CalendarClock, CalendarX } from "lucide-react";
+import { Calendar, CalendarCheck, CalendarClock, CalendarX, Mail } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useCalendarContext } from "@/providers/CalendarProvider";
 import {
   Card,
   CardContent,
@@ -30,6 +31,7 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
+import { Badge } from "@/components/ui/badge";
 
 export type CalendarProvider = "google" | "microsoft" | "apple";
 
@@ -42,59 +44,99 @@ export function CalendarIntegration({ onSelect, className }: CalendarIntegration
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
+  const { connectCalendar, connectedProviders } = useCalendarContext();
 
-  const handleConnectCalendar = (provider: CalendarProvider) => {
-    // In a real implementation, this would handle OAuth flow
-    toast({
-      title: "Calendar Connection",
-      description: `Connecting to ${provider.charAt(0).toUpperCase() + provider.slice(1)} Calendar...`,
-    });
-    
-    if (onSelect) {
-      onSelect(provider);
+  const handleConnectCalendar = async (provider: CalendarProvider) => {
+    if (provider === "apple") {
+      // Apple calendar integration is not supported through edge functions
+      toast({
+        title: "Apple Calendar",
+        description: "Apple Calendar integration is coming soon.",
+      });
+      return;
     }
     
-    setOpen(false);
-
-    // Simulate successful connection
-    setTimeout(() => {
+    // Map "microsoft" to "outlook" for our API
+    const apiProvider = provider === "microsoft" ? "outlook" : provider;
+    
+    try {
+      await connectCalendar(apiProvider as "google" | "outlook");
+      
+      if (onSelect) {
+        onSelect(provider);
+      }
+      
+      setOpen(false);
+    } catch (error) {
+      console.error("Calendar connection error:", error);
       toast({
-        title: "Calendar Connected",
-        description: `Successfully connected to ${provider.charAt(0).toUpperCase() + provider.slice(1)} Calendar!`,
+        title: "Connection Failed",
+        description: `Could not connect to ${provider} Calendar. Please try again.`,
+        variant: "destructive"
       });
-    }, 1500);
+    }
+  };
+
+  const isConnected = (provider: CalendarProvider): boolean => {
+    // Map Microsoft to outlook for checking connection status
+    if (provider === "microsoft") {
+      return connectedProviders.includes("outlook");
+    }
+    return connectedProviders.includes(provider as "google");
   };
 
   const CalendarOptions = () => (
     <div className="grid gap-4 py-4">
       <Button
         onClick={() => handleConnectCalendar("google")}
-        variant="outline"
-        className="justify-start h-auto py-4"
+        variant={isConnected("google") ? "outline" : "outline"}
+        className={`justify-start h-auto py-4 ${isConnected("google") ? "border-green-500 bg-green-50 dark:bg-green-900/20" : ""}`}
       >
         <div className="flex items-center gap-3">
-          <div className="bg-red-100 dark:bg-red-900/30 p-2 rounded-md">
-            <Calendar className="h-5 w-5 text-red-600 dark:text-red-400" />
+          <div className={`${isConnected("google") ? "bg-green-100 dark:bg-green-900/30" : "bg-red-100 dark:bg-red-900/30"} p-2 rounded-md`}>
+            <Calendar className={`h-5 w-5 ${isConnected("google") ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`} />
           </div>
           <div className="text-left">
-            <h3 className="font-medium">Google Calendar</h3>
-            <p className="text-sm text-muted-foreground">Connect your Google Calendar account</p>
+            <div className="flex items-center">
+              <h3 className="font-medium">Google Calendar</h3>
+              {isConnected("google") && (
+                <Badge variant="outline" className="ml-2 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border-green-500">
+                  Connected
+                </Badge>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {isConnected("google") 
+                ? "Your Google Calendar is connected" 
+                : "Connect your Google Calendar account"}
+            </p>
           </div>
         </div>
       </Button>
       
       <Button
         onClick={() => handleConnectCalendar("microsoft")}
-        variant="outline"
-        className="justify-start h-auto py-4"
+        variant={isConnected("microsoft") ? "outline" : "outline"}
+        className={`justify-start h-auto py-4 ${isConnected("microsoft") ? "border-green-500 bg-green-50 dark:bg-green-900/20" : ""}`}
       >
         <div className="flex items-center gap-3">
-          <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-md">
-            <CalendarClock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+          <div className={`${isConnected("microsoft") ? "bg-green-100 dark:bg-green-900/30" : "bg-blue-100 dark:bg-blue-900/30"} p-2 rounded-md`}>
+            <CalendarClock className={`h-5 w-5 ${isConnected("microsoft") ? "text-green-600 dark:text-green-400" : "text-blue-600 dark:text-blue-400"}`} />
           </div>
           <div className="text-left">
-            <h3 className="font-medium">Microsoft Outlook</h3>
-            <p className="text-sm text-muted-foreground">Connect your Outlook Calendar account</p>
+            <div className="flex items-center">
+              <h3 className="font-medium">Microsoft Outlook</h3>
+              {isConnected("microsoft") && (
+                <Badge variant="outline" className="ml-2 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border-green-500">
+                  Connected
+                </Badge>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {isConnected("microsoft") 
+                ? "Your Outlook Calendar is connected" 
+                : "Connect your Outlook Calendar account"}
+            </p>
           </div>
         </div>
       </Button>
@@ -102,7 +144,7 @@ export function CalendarIntegration({ onSelect, className }: CalendarIntegration
       <Button
         onClick={() => handleConnectCalendar("apple")}
         variant="outline"
-        className="justify-start h-auto py-4"
+        className="justify-start h-auto py-4 opacity-70"
       >
         <div className="flex items-center gap-3">
           <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded-md">
@@ -110,7 +152,7 @@ export function CalendarIntegration({ onSelect, className }: CalendarIntegration
           </div>
           <div className="text-left">
             <h3 className="font-medium">Apple Calendar</h3>
-            <p className="text-sm text-muted-foreground">Connect your iCloud Calendar account</p>
+            <p className="text-sm text-muted-foreground">Coming soon</p>
           </div>
         </div>
       </Button>
@@ -124,7 +166,7 @@ export function CalendarIntegration({ onSelect, className }: CalendarIntegration
           <DrawerTrigger asChild>
             <Button variant="outline" className="w-full md:w-auto animate-fade-in">
               <Calendar className="h-4 w-4 mr-2" />
-              Connect Calendar
+              {connectedProviders.length > 0 ? "Manage Calendars" : "Connect Calendar"}
             </Button>
           </DrawerTrigger>
           <DrawerContent>
@@ -139,7 +181,7 @@ export function CalendarIntegration({ onSelect, className }: CalendarIntegration
             </div>
             <DrawerFooter>
               <Button variant="outline" onClick={() => setOpen(false)}>
-                Cancel
+                Close
               </Button>
             </DrawerFooter>
           </DrawerContent>
@@ -154,7 +196,7 @@ export function CalendarIntegration({ onSelect, className }: CalendarIntegration
         <DialogTrigger asChild>
           <Button variant="outline" className="w-full md:w-auto animate-fade-in">
             <Calendar className="h-4 w-4 mr-2" />
-            Connect Calendar
+            {connectedProviders.length > 0 ? "Manage Calendars" : "Connect Calendar"}
           </Button>
         </DialogTrigger>
         <DialogContent className="sm:max-w-md">
@@ -167,7 +209,7 @@ export function CalendarIntegration({ onSelect, className }: CalendarIntegration
           <CalendarOptions />
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>
-              Cancel
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -177,6 +219,9 @@ export function CalendarIntegration({ onSelect, className }: CalendarIntegration
 }
 
 export function CalendarCard() {
+  const { connectedProviders } = useCalendarContext();
+  const hasConnectedCalendars = connectedProviders.length > 0;
+
   return (
     <Card className="animate-fade-in">
       <CardHeader>
@@ -188,11 +233,27 @@ export function CalendarCard() {
       <CardContent>
         <div className="flex items-center justify-center p-6 border-2 border-dashed rounded-lg bg-muted/50">
           <div className="flex flex-col items-center text-center">
-            <CalendarX className="h-10 w-10 text-muted-foreground mb-3" />
-            <h3 className="font-medium text-lg">No Calendar Connected</h3>
-            <p className="text-sm text-muted-foreground mt-1 mb-4">
-              Connect your calendar to import your meetings and receive briefings
-            </p>
+            {hasConnectedCalendars ? (
+              <>
+                <CalendarCheck className="h-10 w-10 text-primary mb-3" />
+                <h3 className="font-medium text-lg">
+                  {connectedProviders.length === 1 
+                    ? `1 Calendar Connected` 
+                    : `${connectedProviders.length} Calendars Connected`}
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1 mb-4">
+                  Your meetings are being imported and analyzed
+                </p>
+              </>
+            ) : (
+              <>
+                <CalendarX className="h-10 w-10 text-muted-foreground mb-3" />
+                <h3 className="font-medium text-lg">No Calendar Connected</h3>
+                <p className="text-sm text-muted-foreground mt-1 mb-4">
+                  Connect your calendar to import your meetings and receive briefings
+                </p>
+              </>
+            )}
             <CalendarIntegration />
           </div>
         </div>

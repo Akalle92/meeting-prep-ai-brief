@@ -4,19 +4,17 @@ import {
   CalendarClock, 
   Clock, 
   MapPin, 
-  Users
+  Users,
+  MailOpen,
+  Mail
 } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow, format } from "date-fns";
+import { Meeting } from "@/services/calendar-service";
 
-interface MeetingCardProps {
-  id: string;
-  title: string;
-  date: Date;
-  location?: string;
-  attendeeCount: number;
-  isUpcoming: boolean;
+interface MeetingCardProps extends Meeting {
+  briefAvailable?: boolean;
 }
 
 export function MeetingCard({ 
@@ -25,14 +23,23 @@ export function MeetingCard({
   date, 
   location, 
   attendeeCount, 
-  isUpcoming 
+  isUpcoming,
+  provider,
+  briefAvailable = false
 }: MeetingCardProps) {
   return (
-    <Link to={`/meeting/${id}`}>
+    <Link to={`/meeting/${id}?provider=${provider}`}>
       <Card className="h-full cursor-pointer transition-all hover:shadow-md">
         <CardHeader className="pb-2">
           <div className="flex justify-between items-start">
-            <CardTitle className="line-clamp-2">{title}</CardTitle>
+            <div className="flex items-center">
+              <CardTitle className="line-clamp-2">{title}</CardTitle>
+              {provider && (
+                <Badge variant="outline" className="ml-2 text-xs">
+                  {provider === "google" ? "Google" : "Outlook"}
+                </Badge>
+              )}
+            </div>
             {isUpcoming && (
               <Badge variant="secondary" className="ml-2 shrink-0">
                 <CalendarClock className="h-3 w-3 mr-1" />
@@ -60,8 +67,21 @@ export function MeetingCard({
           </div>
         </CardContent>
         <CardFooter>
-          <Badge variant="outline" className="bg-primary/5 hover:bg-primary/10">
-            Brief {isUpcoming ? "Pending" : "Available"}
+          <Badge variant={briefAvailable ? "default" : "outline"} 
+                 className={briefAvailable 
+                    ? "bg-primary/20 text-primary hover:bg-primary/30 flex items-center" 
+                    : "bg-primary/5 hover:bg-primary/10 flex items-center"}>
+            {briefAvailable ? (
+              <>
+                <MailOpen className="h-3.5 w-3.5 mr-1" />
+                Brief Available
+              </>
+            ) : (
+              <>
+                <Mail className="h-3.5 w-3.5 mr-1" />
+                Brief {isUpcoming ? "Pending" : "Available"}
+              </>
+            )}
           </Badge>
         </CardFooter>
       </Card>
