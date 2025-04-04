@@ -6,7 +6,7 @@ import { useLocation } from "react-router-dom";
 interface PageLayoutProps {
   children: ReactNode;
   title?: string;
-  description?: string;
+  description?: ReactNode; // Changed from string to ReactNode to accept JSX elements
   className?: string;
 }
 
@@ -25,7 +25,7 @@ export function PageLayout({ children, title, description, className }: PageLayo
         {(title || description) && (
           <div className="mb-6 md:mb-8">
             {title && <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-balance">{title}</h1>}
-            {description && <p className="text-muted-foreground mt-2 max-w-3xl">{description}</p>}
+            {description && <div className="text-muted-foreground mt-2 max-w-3xl">{description}</div>}
           </div>
         )}
         {children}

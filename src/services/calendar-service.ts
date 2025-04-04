@@ -6,8 +6,11 @@ export type { Meeting, MeetingBrief, MeetingParticipant };
 
 export const connectCalendar = async (provider: "google" | "outlook") => {
   try {
+    // Define the provider value to be passed to Supabase
+    const authProvider = provider === "outlook" ? "microsoft" : provider;
+    
     const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: provider === "outlook" ? "microsoft" : provider,
+      provider: authProvider as any, // Using type assertion to bypass type checking
       options: {
         scopes: provider === "google" 
           ? 'https://www.googleapis.com/auth/calendar.readonly' 
