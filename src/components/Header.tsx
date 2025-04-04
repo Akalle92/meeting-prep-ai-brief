@@ -6,6 +6,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export function Header() {
   const isMobile = useIsMobile();
@@ -18,6 +19,8 @@ export function Header() {
       </Link>
 
       <div className="flex items-center space-x-4">
+        <ThemeToggle />
+        
         <Link to="/settings">
           <Button variant="ghost" size="icon" className="transition-colors hover:bg-primary/10">
             <Cog className="h-5 w-5" />
